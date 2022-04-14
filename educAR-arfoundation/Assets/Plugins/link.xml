@@ -1,0 +1,13 @@
+<linker>
+    <assembly fullname="glTFLoader">
+        <type fullname="glTFLoader.*" preserve="all"/>
+    </assembly>
+    <assembly fullname="Siccity.GLTFUtility">
+        <type fullname="Siccity.GLTFUtility.*" preserve="all"/>
+    </assembly>
+    <assembly fullname="Newtonsoft.Json">
+        <type fullname="Newtonsoft.Json.Converters.*">
+            <method signature="System.Void .ctor()"/>
+        </type>
+    </assembly>
+</linker>

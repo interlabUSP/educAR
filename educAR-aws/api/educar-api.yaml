@@ -1,0 +1,510 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Stack do projeto educAR
+
+Parameters:
+  ApiGatewayName:
+    Type: String
+    AllowedPattern: "[a-zA-Z0-9-]+"
+  AuthorizationLambdaFunctionName:
+    Type: String
+    AllowedPattern: "[a-zA-Z0-9-]+"
+  BackendLambdaFunctionName:
+    Type: String
+    AllowedPattern: "[a-zA-Z0-9-]+"
+  DynamodbTableName:
+    Type: String
+    AllowedPattern: "[a-zA-Z0-9-]+"
+
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref ApiGatewayName
+      EndpointConfiguration:
+        Types: 
+          - REGIONAL
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: BackendLambdaFunction
+    Properties:
+      FunctionName: !Ref BackendLambdaFunctionName
+      Principal: apigateway.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref RestApi
+          - /*
+
+  ChannelsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: channels
+
+  ChannelsIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ChannelsResource
+      PathPart: '{channel_id}'
+
+  ScenesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ChannelsIdResource
+      PathPart: 'scenes'
+
+  ScenesIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ScenesResource
+      PathPart: '{scene_id}'
+
+  DeleteChannelMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: DELETE
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ChannelsIdResource
+      RestApiId: !Ref RestApi
+
+  UpdateChannelMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: PUT
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ChannelsIdResource
+      RestApiId: !Ref RestApi
+
+  AddChannelMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: POST
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ChannelsResource
+      RestApiId: !Ref RestApi
+
+  GetChannelsByIdTeacherMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: GET
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ChannelsResource
+      RestApiId: !Ref RestApi
+
+  GetChannelByIdMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: NONE
+      HttpMethod: POST
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ChannelsIdResource
+      RestApiId: !Ref RestApi
+
+  DeleteSceneMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: DELETE
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ScenesIdResource
+      RestApiId: !Ref RestApi
+
+  UpdateSceneMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: 
+      - LambdaPermission
+      - RestApiAuthorizer
+    Properties: 
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref RestApiAuthorizer
+      HttpMethod: PUT
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: { "application/json": "Empty" }
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt BackendLambdaFunction.Arn
+      ResourceId: !Ref ScenesIdResource
+      RestApiId: !Ref RestApi
+
+  RestApiAuthorizerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: restApiAuthorizerRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:invokeFunction
+                Resource: 
+                  - !GetAtt AuthorizationLambdaFunction.Arn
+
+  RestApiAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    DependsOn: AuthorizationLambdaFunction
+    Properties:
+      RestApiId: !Ref RestApi
+      AuthorizerCredentials: !GetAtt RestApiAuthorizerRole.Arn
+      AuthorizerUri: !Join 
+        - ''
+        - - 'arn:aws:apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt 
+            - AuthorizationLambdaFunction
+            - Arn
+          - /invocations
+      IdentitySource: method.request.header.authorizationToken
+      Name: !Ref AuthorizationLambdaFunctionName
+      Type: TOKEN
+
+  BackendLambdaFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: backendLambdaFunctionRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - dynamodb:DeleteItem
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*
+
+  BackendLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref BackendLambdaFunctionName
+      Runtime: nodejs14.x
+      Role: !GetAtt BackendLambdaFunctionRole.Arn
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          // necessario fazer upload do zip do projeto
+
+  AuthorizationLambdaFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: authorizationLambdaFunctionRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+
+  AuthorizationLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref AuthorizationLambdaFunctionName
+      Runtime: nodejs14.x
+      Role: !GetAtt AuthorizationLambdaFunctionRole.Arn
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          const http = require('https');
+          var user_id = null;
+
+          exports.handler =  function(event, context, callback) {
+              console.log(event);
+              var token = event.authorizationToken;
+              var requestSettings = {
+                  host: 'api.sketchfab.com',
+                  path: '/v3/me',
+                  method: 'GET',
+                  headers: {
+                      'Authorization': 'Bearer ' + token
+                  }
+              };
+
+              var req = http.get(requestSettings, function(res) {
+                var bodyChunks = [];
+                res.on('data', function(chunk) {
+                  bodyChunks.push(chunk);
+                }).on('end', function() {
+                  var body = JSON.parse(Buffer.concat(bodyChunks).toString());
+                  if (body.uid != null) {
+                      user_id = body.uid;
+                      callback(null, generatePolicy('id-teacher', 'Allow', event.methodArn));
+                  } else {
+                      callback(null, generatePolicy('id-teacher', 'Deny', event.methodArn));
+                  }
+                })
+              });
+              
+              req.on('error', (e) => {
+                callback(null, generatePolicy('id-teacher', 'Deny', event.methodArn));
+              });
+              
+              // switch (token) {
+              //     case 'allow':
+              //         callback(null, generatePolicy('id-teacher', 'Allow', event.methodArn));
+              //         break;
+              //     case 'deny':
+              //         callback(null, generatePolicy('id-teacher', 'Deny', event.methodArn));
+              //         break;
+              //     case 'unauthorized':
+              //         callback("Unauthorized");   // Return a 401 Unauthorized response
+              //         break;
+              //     default:
+              //         callback(null, generatePolicy('id-teacher', 'Allow', event.methodArn));
+              //         break;
+              //         // callback("Error: Invalid token"); // Return a 500 Invalid token response
+              // }
+          };
+
+          var generatePolicy = function(principalId, effect, resource) {
+              var authResponse = {};
+              
+              authResponse.principalId = principalId;
+              if (effect && resource) {
+                  var policyDocument = {};
+                  policyDocument.Version = '2012-10-17'; 
+                  policyDocument.Statement = [];
+                  var statementOne = {};
+                  statementOne.Action = 'execute-api:Invoke'; 
+                  statementOne.Effect = effect;
+                  statementOne.Resource = "*";
+                  policyDocument.Statement[0] = statementOne;
+                  authResponse.policyDocument = policyDocument;
+              }
+              
+              // Optional output with custom properties of the String, Number or Boolean type.
+              authResponse.context = {
+                  "id-teacher": user_id,
+              };
+              return authResponse;
+          };
+
+  DynamodbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamodbTableName
+      AttributeDefinitions:
+        -
+          AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  # WriteCapacityScalableTarget:
+  #   Type: AWS::ApplicationAutoScaling::ScalableTarget
+  #   Properties:
+  #     MaxCapacity: 10
+  #     MinCapacity: 1
+  #     ResourceId: !Join
+  #       - /
+  #       - - table
+  #         - !Ref DynamodbTable
+  #     RoleARN: !GetAtt ScalingRole.Arn
+  #     ScalableDimension: dynamodb:table:WriteCapacityUnits
+  #     ServiceNamespace: dynamodb
+
+  # ReadCapacityScalableTarget:
+  #   Type: AWS::ApplicationAutoScaling::ScalableTarget
+  #   Properties:
+  #     MaxCapacity: 10
+  #     MinCapacity: 1
+  #     ResourceId: !Join
+  #       - /
+  #       - - table
+  #         - !Ref DynamodbTable
+  #     RoleARN: !GetAtt ScalingRole.Arn
+  #     ScalableDimension: dynamodb:table:ReadCapacityUnits
+  #     ServiceNamespace: dynamodb
+
+  # ScalingRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         -
+  #           Effect: "Allow"
+  #           Principal:
+  #             Service:
+  #               - application-autoscaling.amazonaws.com
+  #           Action:
+  #             - "sts:AssumeRole"
+  #     Policies:
+  #       -
+  #         PolicyName: "dynamodbAutoScalingRole"
+  #         PolicyDocument:
+  #           Version: "2012-10-17"
+  #           Statement:
+  #             -
+  #               Effect: "Allow"
+  #               Action:
+  #                 - "dynamodb:DescribeTable"
+  #                 - "dynamodb:UpdateTable"
+  #                 - "cloudwatch:PutMetricAlarm"
+  #                 - "cloudwatch:DescribeAlarms"
+  #                 - "cloudwatch:GetMetricStatistics"
+  #                 - "cloudwatch:SetAlarmState"
+  #                 - "cloudwatch:DeleteAlarms"
+  #               Resource: "*"
+
+  # WriteScalingPolicy:
+  #   Type: AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: WriteAutoScalingPolicy
+  #     PolicyType: TargetTrackingScaling
+  #     ScalingTargetId: !Ref WriteCapacityScalableTarget
+  #     TargetTrackingScalingPolicyConfiguration:
+  #       TargetValue: 80.0
+  #       ScaleInCooldown: 60
+  #       ScaleOutCooldown: 60
+  #       PredefinedMetricSpecification:
+  #         PredefinedMetricType: DynamoDBWriteCapacityUtilization
+
+  # ReadScalingPolicy:
+  #   Type: AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: ReadAutoScalingPolicy
+  #     PolicyType: TargetTrackingScaling
+  #     ScalingTargetId: !Ref ReadCapacityScalableTarget
+  #     TargetTrackingScalingPolicyConfiguration:
+  #       TargetValue: 80.0
+  #       ScaleInCooldown: 60
+  #       ScaleOutCooldown: 60
+  #       PredefinedMetricSpecification:
+  #         PredefinedMetricType: DynamoDBReadCapacityUtilization
