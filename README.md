@@ -1,3 +1,0 @@
-# educAR
-# educAR
-# educAR
